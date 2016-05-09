@@ -211,7 +211,7 @@ options:
     - Set whether AWS will Stop or Terminate an instance on shutdown
     required: false
     default: 'stop'
-    choices: [ "stop", "terminate"
+    choices: [ "stop", "terminate" ]
   state:
     version_added: "1.3"
     description:
