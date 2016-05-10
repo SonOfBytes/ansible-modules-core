@@ -206,7 +206,7 @@ options:
     default: no
     choices: [ "yes", "no" ]
   instance_initiated_shutdown_behavior:
-    version_added: "2.1"
+    version_added: "2.2"
     description:
     - Set whether AWS will Stop or Terminate an instance on shutdown
     required: false
