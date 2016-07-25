@@ -897,9 +897,9 @@ def create_instances(module, ec2, vpc, override_count=None):
     count_tag = module.params.get('count_tag')
     source_dest_check = module.boolean(module.params.get('source_dest_check'))
     termination_protection = module.boolean(module.params.get('termination_protection'))
-    instance_initiated_shutdown_behavior = module.params.get('instance_initiated_shutdown_behavior')
     network_interfaces = module.params.get('network_interfaces')
     spot_launch_group = module.params.get('spot_launch_group')
+    instance_initiated_shutdown_behavior = module.params.get('instance_initiated_shutdown_behavior')
 
     # group_id and group_name are exclusive of each other
     if group_id and group_name:
