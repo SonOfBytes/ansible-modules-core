@@ -19,10 +19,10 @@ DOCUMENTATION = """
 ---
 module: ios_template
 version_added: "2.1"
-author: "Peter sprygada (@privateip)"
+author: "Peter Sprygada (@privateip)"
 short_description: Manage Cisco IOS device configurations over SSH
 description:
-  - Manages network device configurations over SSH.  This module
+  - Manages Cisco IOS network device configurations over SSH.  This module
     allows implementors to work with the device running-config.  It
     provides a way to push a set of commands onto a network device
     by evaluting the current running-config and only pushing configuration
@@ -37,8 +37,7 @@ options:
         runtime.  By default the task will first search for the source
         file in role or playbook root folder in templates unless a full
         path to the file is given.
-    required: false
-    default: null
+    required: true
   force:
     description:
       - The force argument instructs the module not to consider the
@@ -47,7 +46,7 @@ options:
         without first checking if already configured.
     required: false
     default: false
-    choices: BOOLEANS
+    choices: [ "true", "false" ]
   include_defaults:
     description:
       - The module, by default, will collect the current device
@@ -58,7 +57,7 @@ options:
         does not support such a flag, this argument is silently ignored.
     required: false
     default: false
-    choices: BOOLEANS
+    choices: [ "true", "false" ]
   backup:
     description:
       - When this argument is configured true, the module will backup
@@ -67,7 +66,7 @@ options:
         the root of the playbook directory.
     required: false
     default: false
-    choices: BOOLEANS
+    choices: [ "true", "false" ]
   config:
     description:
       - The module, by default, will connect to the remote device and
@@ -84,15 +83,21 @@ options:
 EXAMPLES = """
 - name: push a configuration onto the device
   ios_template:
+    host: hostname
+    username: foo
     src: config.j2
 
 - name: forceable push a configuration onto the device
   ios_template:
+    host: hostname
+    username: foo
     src: config.j2
     force: yes
 
 - name: provide the base configuration for comparision
   ios_template:
+    host: hostname
+    username: foo
     src: candidate_config.txt
     config: current_config.txt
 """
@@ -110,11 +115,13 @@ responses:
   type: list
   sample: ['...', '...']
 """
+from ansible.module_utils.netcfg import NetworkConfig, dumps
+from ansible.module_utils.ios import NetworkModule, NetworkError
 
 def get_config(module):
     config = module.params['config'] or dict()
     if not config and not module.params['force']:
-        config = module.config
+        config = module.config.get_config()
     return config
 
 def main():
@@ -131,9 +138,9 @@ def main():
 
     mutually_exclusive = [('config', 'backup'), ('config', 'force')]
 
-    module = get_module(argument_spec=argument_spec,
-                        mutually_exclusive=mutually_exclusive,
-                        supports_check_mode=True)
+    module = NetworkModule(argument_spec=argument_spec,
+                           mutually_exclusive=mutually_exclusive,
+                           supports_check_mode=True)
 
     result = dict(changed=False)
 
@@ -144,15 +151,16 @@ def main():
         config = NetworkConfig(contents=contents, indent=1)
         result['_backup'] = contents
 
+    commands = list()
     if not module.params['force']:
-        commands = candidate.difference(config)
+        commands = dumps(candidate.difference(config), 'commands')
     else:
-        commands = str(candidate).split('\n')
+        commands = str(candidate)
 
     if commands:
+        commands = commands.split('\n')
         if not module.check_mode:
-            commands = [str(c).strip() for c in commands]
-            response = module.configure(commands)
+            response = module.config(commands)
             result['responses'] = response
         result['changed'] = True
 
@@ -160,10 +168,6 @@ def main():
     module.exit_json(**result)
 
 
-from ansible.module_utils.basic import *
-from ansible.module_utils.shell import *
-from ansible.module_utils.netcfg import *
-from ansible.module_utils.ios import *
 if __name__ == '__main__':
     main()
 
